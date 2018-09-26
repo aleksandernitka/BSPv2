@@ -1,0 +1,172 @@
+---
+title: "BSPv2"
+author: "Aleksander Nitka"
+date: "25/09/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(R.matlab)
+library(ggplot2)
+library(knitr)
+```
+
+## List matlab files in directory
+```{r, list matlab files in directory}
+files.mat = list.files(path = "./matlab_data", pattern = "\\.mat$")
+print(files.mat)
+```
+
+## Load files into a one data frame
+```{r, load files}
+for (i in 1:length(files.mat)) {
+    
+    # Extract details from file name
+    exp = strsplit(files.mat[i], "_")[[1]][1]
+    ss = strsplit(files.mat[i], "_")[[1]][2]
+    block = strsplit(files.mat[i], "_")[[1]][3]
+    cond = strsplit(strsplit(files.mat[i], "_")[[1]][4], '[.]')[[1]][1]
+
+    # Read mat file
+    dat = readMat( paste("./matlab_data", files.mat[i], sep = "/"))
+    
+    # Extract data from mat to R
+    # searchRT - rection time to non-porbe trials, 0 if probe trial but 0 also if no response
+    # targetletters - no of accurately reported letters on target side
+    # distletters - no of accurately reported letters on non-target side
+    # probe - logical if trial was a probe or not
+    # SearchRespCode - 38 is UpArrow and 40 is DownArrow
+    
+    # TODO
+    # How do I know if response to rotation was correct?
+    
+    tmp = as.data.frame(cbind(t(dat$searchRT), 
+                              t(dat$searchRespCode),
+                              t(dat$targletters),
+                              t(dat$distletters),
+                              dat$probe, 
+                              t(dat$FA), 
+                              t(dat$colorcue),
+                              exp, ss, block, cond
+                              ))
+    
+    names(tmp) = c('RT', 'SearchRespCode', 'TargLetters', 'DistLetters', 'ProbeTrial', 'FA', 
+                   'ColorCue', 'Exp', 'SS', 'Block', 'Cond')
+    
+    # Extract orientation codes
+    orient = as.data.frame(dat$Orient)
+    names(orient) = c('orient01', 'orient02', 'orient03', 'orient04',
+                      'orient05', 'orient06', 'orient07', 'orient08',
+                      'orient09', 'orient10', 'orient11', 'orient12')
+    
+    tmp = cbind(tmp, orient)
+    
+    if (i == 1){
+        # Create main data frame by copying the tmp
+        BSPv2 = tmp
+        print('BSPv2 data frame created')
+        print(sprintf('Added ss %s, %s, %s to BSPv2', ss, block, cond))
+        remove(tmp, block, cond, exp, ss, orient, dat)
+    }
+    else {
+        # bind main data frame and tmp 
+        BSPv2 = rbind(BSPv2, tmp)
+        print(sprintf('Added ss %s, %s, %s to BSPv2', ss, block, cond))
+        remove(tmp, block, cond, exp, ss, orient, dat)
+        
+    }
+    
+}
+```
+
+## Do some data manipulations, prep for mean analysis
+```{r, prepare df for analysis}
+# data type must be changed from integer to numeric, but converting directly changes the values,
+# must convert to string and then to numeric to keep the actual values
+BSPv2$RT = as.numeric(as.character(BSPv2$RT))
+BSPv2$TargLetters = as.numeric(BSPv2$TargLetters)
+BSPv2$DistLetters = as.numeric(BSPv2$DistLetters)
+
+# If RT = 0 and trial != Probe then it was a timeOut
+# need to mark those as otherwise 0 will be counted towards the mean
+BSPv2$timeOut = 0
+BSPv2$timeOut[BSPv2$RT == 0 & BSPv2$ProbeTrial == 0] = 1
+
+# Get subject IDs
+SSid = as.numeric(unique(BSPv2$SS))
+
+# Create a DF for means
+means_BSPv2 = data.frame(matrix(nrow = length(SSid)*3, ncol = 5))
+names(means_BSPv2) = c('SS', 'Cond', 'mRT', 'LettersTarget', 'LettersDistractor')
+means_BSPv2$SS = SSid
+means_BSPv2$Cond = c(rep('cond0',length(SSid)), rep('cond1',length(SSid)), rep('cond2',length(SSid)))
+```
+
+
+## Extract means
+```{r, extract means}
+for (i in 1:nrow(means_BSPv2)){
+    
+    means_BSPv2$mRT[i] = mean(subset(BSPv2$RT, 
+                                     BSPv2$SS == means_BSPv2$SS[i] & 
+                                         BSPv2$Cond == means_BSPv2$Cond[i] & 
+                                         BSPv2$ProbeTrial == 0 &
+                                         BSPv2$timeOut == 0))
+    
+    means_BSPv2$LettersTarget[i] = mean(subset(BSPv2$TargLetters, 
+                                     BSPv2$SS == means_BSPv2$SS[i] & 
+                                         BSPv2$Cond == means_BSPv2$Cond[i] & 
+                                         BSPv2$ProbeTrial == 1))
+    
+    means_BSPv2$LettersDistractor[i] = mean(subset(BSPv2$DistLetters, 
+                                               BSPv2$SS == means_BSPv2$SS[i] & 
+                                                   BSPv2$Cond == means_BSPv2$Cond[i] & 
+                                                   BSPv2$ProbeTrial == 1))
+    
+}
+
+# Make sure that data types as good
+means_BSPv2$Cond = as.factor(means_BSPv2$Cond)
+means_BSPv2$LettersTarget = as.numeric(means_BSPv2$LettersTarget)
+means_BSPv2$LettersDistractor = as.numeric(means_BSPv2$LettersDistractor)
+
+```
+
+## Individual Means
+```{r, indi means, echo=0}
+kable(means_BSPv2)
+
+```
+
+##Fast results
+
+###RT analysis 
+Performed for N = `r length(SSid)`. Mean RT for **'cond0'** was `r mean(subset(means_BSPv2$mRT, means_BSPv2$Cond == 'cond0'))` (SD = `r sd(subset(means_BSPv2$mRT, means_BSPv2$Cond == 'cond0'))`), for **'cond1'** it was `r mean(subset(means_BSPv2$mRT, means_BSPv2$Cond == 'cond1'))` (SD = `r sd(subset(means_BSPv2$mRT, means_BSPv2$Cond == 'cond1'))`) and for **'cond2'** it was `r mean(subset(means_BSPv2$mRT, means_BSPv2$Cond == 'cond2'))` (SD = `r sd(subset(means_BSPv2$mRT, means_BSPv2$Cond == 'cond2'))`).
+
+###Probe analysis. 
+On **'cond0'** trials participants reported M = `r mean(means_BSPv2$LettersTarget[means_BSPv2$Cond == 'cond0'])` (SD = `r sd(means_BSPv2$LettersTarget[means_BSPv2$Cond == 'cond0'])`) letters on the Target Side and M = `r mean(means_BSPv2$LettersDistractor[means_BSPv2$Cond == 'cond0'])` (SD = `r sd(means_BSPv2$LettersDistractor[means_BSPv2$Cond == 'cond0'])`) on Distractor Side. During the **'cond1'** trials participants reported M = `r mean(means_BSPv2$LettersTarget[means_BSPv2$Cond == 'cond1'])` (SD = `r sd(means_BSPv2$LettersTarget[means_BSPv2$Cond == 'cond1'])`) letters on the Target Side and M = `r mean(means_BSPv2$LettersDistractor[means_BSPv2$Cond == 'cond1'])` (SD = `r sd(means_BSPv2$LettersDistractor[means_BSPv2$Cond == 'cond1'])`) on Distractor Side. Finally, for the **'cond2'** trials participants reported M = `r mean(means_BSPv2$LettersTarget[means_BSPv2$Cond == 'cond2'])` (SD = `r sd(means_BSPv2$LettersTarget[means_BSPv2$Cond == 'cond2'])`) letters on the Target Side and M = `r mean(means_BSPv2$LettersDistractor[means_BSPv2$Cond == 'cond2'])` (SD = `r sd(means_BSPv2$LettersDistractor[means_BSPv2$Cond == 'cond2'])`) on Distractor Side.
+
+```{r, plots, echo=0}
+# RT distributions for all subjects
+
+for (i in 1:length(SSid)){
+    
+    if (i == 1){
+        plot(density(BSPv2$RT[BSPv2$SS == SSid[i] & BSPv2$Cond == 'cond0' & BSPv2$ProbeTrial == 0 & BSPv2$timeOut == 0]), ylim = c(0,1), col = 'red', main = 'RT distribution, subject/condition')
+        lines(density(BSPv2$RT[BSPv2$SS == SSid[i] & BSPv2$Cond == 'cond1' & BSPv2$ProbeTrial == 0 & BSPv2$timeOut == 0]), ylim = c(0,1), col = 'blue')
+        lines(density(BSPv2$RT[BSPv2$SS == SSid[i] & BSPv2$Cond == 'cond2' & BSPv2$ProbeTrial == 0 & BSPv2$timeOut == 0]), ylim = c(0,1), col = 'green')
+        
+        legend(3.5,1, c('cond0','cond1', 'cond2'), lty=c(1,1), lwd=c(2.5,2.5), col=c('red','blue','green'))
+    }
+    
+    else {
+        lines(density(BSPv2$RT[BSPv2$SS == SSid[i] & BSPv2$ProbeTrial == 0 & BSPv2$timeOut == 0 ]), col = 'red')
+                lines(density(BSPv2$RT[BSPv2$SS == SSid[i] & BSPv2$Cond == 'cond1' & BSPv2$ProbeTrial == 0 & BSPv2$timeOut == 0]), ylim = c(0,1), col = 'blue')
+        lines(density(BSPv2$RT[BSPv2$SS == SSid[i] & BSPv2$Cond == 'cond2' & BSPv2$ProbeTrial == 0 & BSPv2$timeOut == 0]), ylim = c(0,1), col = 'green')
+    }
+    
+}
+
+```
