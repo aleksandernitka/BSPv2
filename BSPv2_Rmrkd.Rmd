@@ -8,13 +8,14 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
-list.of.packages <- c("ggplot2", "R.matlab", "ggpubr", "knitr")
+list.of.packages <- c("ggplot2", "R.matlab", "ggpubr", "knitr", "car")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)>0) {install.packages(new.packages)}
 
 library(R.matlab)
 library(ggplot2)
 library(knitr)
+library(car)
 library(ggpubr)
 
 options(scipen = 999) # No to sci-notation
@@ -227,10 +228,36 @@ lettDist_plg
 
 ```{r, RT Assumptions of ANOVA test}
 ## RT
-# normality test
-shapiro.test(means_BSPv2$mRT)
+# normality test - all RT data
+rt_sw = shapiro.test(means_BSPv2$mRT)
+# as above but for cond0, 1, 2
+rt_sw_c0 = shapiro.test(means_BSPv2$mRT[means_BSPv2$Cond == 'cond0'])
+rt_sw_c1 = shapiro.test(means_BSPv2$mRT[means_BSPv2$Cond == 'cond1'])
+rt_sw_c2 = shapiro.test(means_BSPv2$mRT[means_BSPv2$Cond == 'cond2'])
+
 # Bartlett Test of Homogeneity of Variances PARAMETIC
-bartlett.test(mRT~Cond, data=means_BSPv2)
+# From: http://www.instantr.com/2012/12/12/performing-bartletts-test-in-r/
+# Bartlett’s test allows you to compare the variance of two or more samples to determine whether they are drawn from populations with equal variance. It is suitable for normally distributed data. The test has the null hypothesis that the variances are equal and the alterntive hypothesis that they are not equal.
+# NS means we cannot reject the null hypothesis that the variance is the same for all treatment groups. 
+rt_bt = bartlett.test(mRT~Cond, data=means_BSPv2)
+
+# Levene's test (does the same as Bartlett), if NS homescedascity can be assumed.
+rt_lt = leveneTest(mRT~Cond, data=means_BSPv2)
+rt_lt_p = rt_lt$`Pr(>F)`[1] # because of stupid packing of this value
+
 # Figner-Killeen Test of Homogeneity of Variances NON-PARAMETIC
-fligner.test(mRT~Cond, data=means_BSPv2) 
+# fligner.test(mRT~Cond, data=means_BSPv2) 
+```
+
+### Assumptions testing, RT
+For **normality** of data Shapiro-Wilk test was used. Normality can be assumed if the test is ns and so for all RT data it was p = `r rt_sw$p.value`, for a subset of **'cond0'** RTs it as p = `r rt_sw_c0$p.value`, for **'cond1'** p = `r rt_sw_c1$p.value` and for the **'cond2'** p = `r rt_sw_c2$p.value`.
+
+Next the assumption that **variances** of the populations from which different samples are drawn are equal. This was done with Bartlett Test of Homogeneity of Variances and Levene's Test. If either of those tests comes out as ns it means we cannot reject the null hypothesis that the variance is the same for all treatment groups. Bartlett test had p = `r rt_bt$p.value` and Levene's had p = `r rt_lt_p`. 
+
+```{r, RT ANOVA}
+rt_aov = aov(data = means_BSPv2, mRT ~ Cond)
+summary(rt_aov)
+
+# Run this for variances not equal:
+#rt_aov_ow = oneway.test(data = means_BSPv2, mRT ~ Cond)
 ```
