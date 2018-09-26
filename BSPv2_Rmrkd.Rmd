@@ -18,12 +18,13 @@ library(knitr)
 library(car)
 library(ggpubr)
 
-options(scipen = 999) # No to sci-notation
+options(scipen = 999) # say no to sci-notation!
 ```
 
 ## List matlab files in directory
 ```{r, list matlab files in directory}
 
+# Change that to wherever your data is
 matdir = "/Users/aleksandernitka/OneDrive\ -\ The\ University\ of\ Nottingham/Lehigh_2018/Data/matlab_data"
 
 files.mat = list.files(path = matdir, pattern = "\\.mat$")
@@ -152,11 +153,11 @@ means_BSPv2$LettersDiff = means_BSPv2$LettersTarget - means_BSPv2$LettersDistrac
 
 ## Individual Means
 ```{r, indi means, echo=0}
-kable(means_BSPv2)
+kable(means_BSPv2) # nice looking table in html
 
 ```
 
-##Fast results
+##Fast results - descriptives
 
 ###RT analysis 
 Performed for N = `r length(SSid)`. Mean RT for **'cond0'** was `r mean(subset(means_BSPv2$mRT, means_BSPv2$Cond == 'cond0'))` (SD = `r sd(subset(means_BSPv2$mRT, means_BSPv2$Cond == 'cond0'))`), for **'cond1'** it was `r mean(subset(means_BSPv2$mRT, means_BSPv2$Cond == 'cond1'))` (SD = `r sd(subset(means_BSPv2$mRT, means_BSPv2$Cond == 'cond1'))`) and for **'cond2'** it was `r mean(subset(means_BSPv2$mRT, means_BSPv2$Cond == 'cond2'))` (SD = `r sd(subset(means_BSPv2$mRT, means_BSPv2$Cond == 'cond2'))`).
@@ -185,6 +186,15 @@ for (i in 1:length(SSid)){
     
 }
 
+# Plot mean distributions
+
+plot(density(means_BSPv2$mRT[means_BSPv2$Cond == 'cond0']), col = 'red', xlim = c(0.5,2.3), main = 'RT distribution plots', lwd = 2)
+lines(density(means_BSPv2$mRT[means_BSPv2$Cond == 'cond1']), col = 'blue', lwd = 2)
+lines(density(means_BSPv2$mRT[means_BSPv2$Cond == 'cond2']), col = 'green', lwd = 2)
+legend(.5,2.5, c('cond0','cond1', 'cond2'), lty=c(1,1), lwd=c(2.5,2.5), col=c('red','blue','green'))
+rug(means_BSPv2$mRT[means_BSPv2$Cond == 'cond0'], col = 'red', lwd = 2)
+rug(means_BSPv2$mRT[means_BSPv2$Cond == 'cond1'], col = 'blue', lwd = 2)
+rug(means_BSPv2$mRT[means_BSPv2$Cond == 'cond2'], col = 'green', lwd = 2)
 ```
 
 ```{r, ggplot - means}
