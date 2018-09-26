@@ -15,7 +15,10 @@ library(knitr)
 
 ## List matlab files in directory
 ```{r, list matlab files in directory}
-files.mat = list.files(path = "/Users/aleksandernitka/OneDrive\ -\ The\ University\ of\ Nottingham/Lehigh_2018/Data/matlab_data", pattern = "\\.mat$")
+
+matdir = "/Users/aleksandernitka/OneDrive\ -\ The\ University\ of\ Nottingham/Lehigh_2018/Data/matlab_data"
+
+files.mat = list.files(path = matdir, pattern = "\\.mat$")
 print(files.mat)
 ```
 
@@ -30,7 +33,7 @@ for (i in 1:length(files.mat)) {
     cond = strsplit(strsplit(files.mat[i], "_")[[1]][4], '[.]')[[1]][1]
 
     # Read mat file
-    dat = readMat( paste("./matlab_data", files.mat[i], sep = "/"))
+    dat = readMat( paste(matdir, files.mat[i], sep = "/"))
     
     # Extract data from mat to R
     # searchRT - rection time to non-porbe trials, 0 if probe trial but 0 also if no response
