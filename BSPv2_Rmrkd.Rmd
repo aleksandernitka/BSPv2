@@ -168,6 +168,12 @@ On **'cond0'** trials participants reported M = `r mean(means_BSPv2$LettersTarge
 ```{r, plots - distributions, echo=0}
 # RT distributions for all subjects
 
+# setup transparent colours
+transparency = .5
+redt = rgb(red = 1, green = 0, blue = 0, alpha = transparency)
+greent = rgb(red = 0, green = 1, blue = 0, alpha = transparency)
+bluet = rgb(red =0 , green = 0, blue = 1, alpha = transparency)
+
 for (i in 1:length(SSid)){
     
     if (i == 1){
@@ -175,13 +181,23 @@ for (i in 1:length(SSid)){
         lines(density(BSPv2$RT[BSPv2$SS == SSid[i] & BSPv2$Cond == 'cond1' & BSPv2$ProbeTrial == 0 & BSPv2$timeOut == 0]), ylim = c(0,1), col = 'blue')
         lines(density(BSPv2$RT[BSPv2$SS == SSid[i] & BSPv2$Cond == 'cond2' & BSPv2$ProbeTrial == 0 & BSPv2$timeOut == 0]), ylim = c(0,1), col = 'green')
         
+        # map individual trials on the rug - red, green, blue
+        rug(BSPv2$RT[BSPv2$SS == SSid[i] & BSPv2$Cond == 'cond0' & BSPv2$ProbeTrial == 0 & BSPv2$timeOut == 0], col = redt)
+        rug(BSPv2$RT[BSPv2$SS == SSid[i] & BSPv2$Cond == 'cond1' & BSPv2$ProbeTrial == 0 & BSPv2$timeOut == 0], col = bluet)
+        rug(BSPv2$RT[BSPv2$SS == SSid[i] & BSPv2$Cond == 'cond2' & BSPv2$ProbeTrial == 0 & BSPv2$timeOut == 0], col = greent)
+        
         legend(3.5,1, c('cond0','cond1', 'cond2'), lty=c(1,1), lwd=c(2.5,2.5), col=c('red','blue','green'))
     }
     
     else {
-        lines(density(BSPv2$RT[BSPv2$SS == SSid[i] & BSPv2$ProbeTrial == 0 & BSPv2$timeOut == 0 ]), col = 'red')
-                lines(density(BSPv2$RT[BSPv2$SS == SSid[i] & BSPv2$Cond == 'cond1' & BSPv2$ProbeTrial == 0 & BSPv2$timeOut == 0]), ylim = c(0,1), col = 'blue')
+        lines(density(BSPv2$RT[BSPv2$SS == SSid[i] & BSPv2$Cond == 'cond0'  & BSPv2$ProbeTrial == 0 & BSPv2$timeOut == 0 ]), col = 'red')
+        lines(density(BSPv2$RT[BSPv2$SS == SSid[i] & BSPv2$Cond == 'cond1' & BSPv2$ProbeTrial == 0 & BSPv2$timeOut == 0]), ylim = c(0,1), col = 'blue')
         lines(density(BSPv2$RT[BSPv2$SS == SSid[i] & BSPv2$Cond == 'cond2' & BSPv2$ProbeTrial == 0 & BSPv2$timeOut == 0]), ylim = c(0,1), col = 'green')
+        
+        # map individual trials on the rug - red, green, blue
+        rug(BSPv2$RT[BSPv2$SS == SSid[i] & BSPv2$Cond == 'cond0' & BSPv2$ProbeTrial == 0 & BSPv2$timeOut == 0], col = redt)
+        rug(BSPv2$RT[BSPv2$SS == SSid[i] & BSPv2$Cond == 'cond1' & BSPv2$ProbeTrial == 0 & BSPv2$timeOut == 0], col = bluet)
+        rug(BSPv2$RT[BSPv2$SS == SSid[i] & BSPv2$Cond == 'cond2' & BSPv2$ProbeTrial == 0 & BSPv2$timeOut == 0], col = greent)
     }
     
 }
@@ -192,9 +208,9 @@ plot(density(means_BSPv2$mRT[means_BSPv2$Cond == 'cond0']), col = 'red', xlim = 
 lines(density(means_BSPv2$mRT[means_BSPv2$Cond == 'cond1']), col = 'blue', lwd = 2)
 lines(density(means_BSPv2$mRT[means_BSPv2$Cond == 'cond2']), col = 'green', lwd = 2)
 legend(.5,2.5, c('cond0','cond1', 'cond2'), lty=c(1,1), lwd=c(2.5,2.5), col=c('red','blue','green'))
-rug(means_BSPv2$mRT[means_BSPv2$Cond == 'cond0'], col = 'red', lwd = 2)
-rug(means_BSPv2$mRT[means_BSPv2$Cond == 'cond1'], col = 'blue', lwd = 2)
-rug(means_BSPv2$mRT[means_BSPv2$Cond == 'cond2'], col = 'green', lwd = 2)
+rug(means_BSPv2$mRT[means_BSPv2$Cond == 'cond0'], col = redt, lwd = 2)
+rug(means_BSPv2$mRT[means_BSPv2$Cond == 'cond1'], col = bluet, lwd = 2)
+rug(means_BSPv2$mRT[means_BSPv2$Cond == 'cond2'], col = greent, lwd = 2)
 ```
 
 ```{r, ggplot - means}
