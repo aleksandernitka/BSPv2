@@ -16,6 +16,8 @@ library(R.matlab)
 library(ggplot2)
 library(knitr)
 library(ggpubr)
+
+options(scipen = 999) # No to sci-notation
 ```
 
 ## List matlab files in directory
@@ -187,29 +189,41 @@ for (i in 1:length(SSid)){
 ```{r, ggplot - means}
 #ggplot(data = means_BSPv2, aes(Cond, mRT)) + geom_point(color="skyblue") + stat_summary(fun.y=mean,geom="line",lwd=1,aes(group=1))
 
-
-p = ggboxplot(means_BSPv2, x = "Cond", y = "mRT",
-                color = "Cond", palette =c("dark red", "dark green", "dark blue"),
-                add = "jitter", shape = "Cond")
-
 my_test = list( c("cond0", "cond1"), c("cond1", "cond2"), c("cond0", "cond2") )
 
-p + stat_compare_means(comparisons = my_test, method = "t.test") + ggtitle("RT + t.test")
+rt_plg = ggboxplot(means_BSPv2, x = "Cond", y = "mRT",
+                color = "Cond", palette =c("dark red", "dark green", "dark blue"),
+                add = "jitter", shape = "Cond") + stat_compare_means(comparisons = my_test, method = "t.test") + ggtitle("RT + t.test")
 
+rt_plg
 
-ggdensity(means_BSPv2, x = "mRT",
-   add = "mean", rug = TRUE,
-   color = "Cond", fill = "Cond",
-   palette = c("dark red", "dark green", "dark blue"))
-
-ggviolin(means_BSPv2, x = "Cond", y = "mRT", fill = "Cond",
+rt_violin = ggviolin(means_BSPv2, x = "Cond", y = "mRT", fill = "Cond",
          palette = c("#00AFBB", "#E7B800", "#FC4E07"),
-         add = "boxplot", add.params = list(fill = "white"))+
-  stat_compare_means(comparisons = my_test)  
-  stat_compare_means(method = "anova",label.y = 1)
+         add = "boxplot", add.params = list(fill = "white"))+ stat_compare_means(comparisons = my_test, method = 't.test')  
+
+rt_violin
 
 ```
 
+```{r, probe plot}
+
+my_test = list( c("cond0", "cond1"), c("cond1", "cond2"), c("cond0", "cond2") )
+
+lettDiff_plg = ggboxplot(means_BSPv2, x = "Cond", y = "LettersDiff",
+                color = "Cond", palette =c("dark red", "dark green", "dark blue"),
+                add = "jitter", shape = "Cond") + stat_compare_means(comparisons = my_test, method = "t.test") + ggtitle("LettersDiff + t.test")
+lettDiff_plg
+
+lettTar_plg = ggboxplot(means_BSPv2, x = "Cond", y = "LettersTarget",
+                color = "Cond", palette =c("dark red", "dark green", "dark blue"),
+                add = "jitter", shape = "Cond") + stat_compare_means(comparisons = my_test, method = "t.test") + ggtitle("LettersTarget + t.test")
+lettTar_plg
+
+lettDist_plg = ggboxplot(means_BSPv2, x = "Cond", y = "LettersDistractor",
+                color = "Cond", palette =c("dark red", "dark green", "dark blue"),
+                add = "jitter", shape = "Cond") + stat_compare_means(comparisons = my_test, method = "t.test") + ggtitle("LettersDistractor + t.test")
+lettDist_plg
+```
 
 ```{r, RT Assumptions of ANOVA test}
 ## RT
