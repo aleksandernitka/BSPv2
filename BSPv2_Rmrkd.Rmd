@@ -11,6 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(R.matlab)
 library(ggplot2)
 library(knitr)
+library(ggpubr)
 ```
 
 ## List matlab files in directory
@@ -135,6 +136,11 @@ means_BSPv2$Cond = as.factor(means_BSPv2$Cond)
 means_BSPv2$LettersTarget = as.numeric(means_BSPv2$LettersTarget)
 means_BSPv2$LettersDistractor = as.numeric(means_BSPv2$LettersDistractor)
 
+
+# Probe trials, Create Difference Index = Target - Distractor
+
+means_BSPv2$LettersDiff = means_BSPv2$LettersTarget - means_BSPv2$LettersDistractor
+
 ```
 
 ## Individual Means
@@ -151,7 +157,7 @@ Performed for N = `r length(SSid)`. Mean RT for **'cond0'** was `r mean(subset(m
 ###Probe analysis. 
 On **'cond0'** trials participants reported M = `r mean(means_BSPv2$LettersTarget[means_BSPv2$Cond == 'cond0'])` (SD = `r sd(means_BSPv2$LettersTarget[means_BSPv2$Cond == 'cond0'])`) letters on the Target Side and M = `r mean(means_BSPv2$LettersDistractor[means_BSPv2$Cond == 'cond0'])` (SD = `r sd(means_BSPv2$LettersDistractor[means_BSPv2$Cond == 'cond0'])`) on Distractor Side. During the **'cond1'** trials participants reported M = `r mean(means_BSPv2$LettersTarget[means_BSPv2$Cond == 'cond1'])` (SD = `r sd(means_BSPv2$LettersTarget[means_BSPv2$Cond == 'cond1'])`) letters on the Target Side and M = `r mean(means_BSPv2$LettersDistractor[means_BSPv2$Cond == 'cond1'])` (SD = `r sd(means_BSPv2$LettersDistractor[means_BSPv2$Cond == 'cond1'])`) on Distractor Side. Finally, for the **'cond2'** trials participants reported M = `r mean(means_BSPv2$LettersTarget[means_BSPv2$Cond == 'cond2'])` (SD = `r sd(means_BSPv2$LettersTarget[means_BSPv2$Cond == 'cond2'])`) letters on the Target Side and M = `r mean(means_BSPv2$LettersDistractor[means_BSPv2$Cond == 'cond2'])` (SD = `r sd(means_BSPv2$LettersDistractor[means_BSPv2$Cond == 'cond2'])`) on Distractor Side.
 
-```{r, plots, echo=0}
+```{r, plots - distributions, echo=0}
 # RT distributions for all subjects
 
 for (i in 1:length(SSid)){
@@ -172,4 +178,37 @@ for (i in 1:length(SSid)){
     
 }
 
+```
+
+```{r, ggplot - means}
+#ggplot(data = means_BSPv2, aes(Cond, mRT)) + geom_point(color="skyblue") + stat_summary(fun.y=mean,geom="line",lwd=1,aes(group=1))
+
+
+p = ggboxplot(means_BSPv2, x = "Cond", y = "mRT",
+                color = "Cond", palette =c("dark red", "dark green", "dark blue"),
+                add = "jitter", shape = "Cond")
+
+my_test = list( c("cond0", "cond1"), c("cond1", "cond2"), c("cond0", "cond2") )
+
+p + stat_compare_means(comparisons = my_test, method = "t.test") + ggtitle("RT")
+
+
+ggdensity(means_BSPv2, x = "mRT",
+   add = "mean", rug = TRUE,
+   color = "Cond", fill = "Cond",
+   palette = c("dark red", "dark green", "dark blue"))
+
+
+
+```
+
+
+```{r, Assumptions of ANOVA test}
+## RT
+# normality test
+shapiro.test(means_BSPv2$mRT)
+# Bartlett Test of Homogeneity of Variances PARAMETIC
+bartlett.test(mRT~Cond, data=means_BSPv2)
+# Figner-Killeen Test of Homogeneity of Variances NON-PARAMETIC
+fligner.test(mRT~Cond, data=means_BSPv2) 
 ```
