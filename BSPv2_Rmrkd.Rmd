@@ -8,6 +8,10 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
+list.of.packages <- c("ggplot2", "R.matlab", "ggpubr", "knitr")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)>0) {install.packages(new.packages)}
+
 library(R.matlab)
 library(ggplot2)
 library(knitr)
@@ -190,7 +194,7 @@ p = ggboxplot(means_BSPv2, x = "Cond", y = "mRT",
 
 my_test = list( c("cond0", "cond1"), c("cond1", "cond2"), c("cond0", "cond2") )
 
-p + stat_compare_means(comparisons = my_test, method = "t.test") + ggtitle("RT")
+p + stat_compare_means(comparisons = my_test, method = "t.test") + ggtitle("RT + t.test")
 
 
 ggdensity(means_BSPv2, x = "mRT",
@@ -198,12 +202,16 @@ ggdensity(means_BSPv2, x = "mRT",
    color = "Cond", fill = "Cond",
    palette = c("dark red", "dark green", "dark blue"))
 
-
+ggviolin(means_BSPv2, x = "Cond", y = "mRT", fill = "Cond",
+         palette = c("#00AFBB", "#E7B800", "#FC4E07"),
+         add = "boxplot", add.params = list(fill = "white"))+
+  stat_compare_means(comparisons = my_test)  
+  stat_compare_means(method = "anova",label.y = 1)
 
 ```
 
 
-```{r, Assumptions of ANOVA test}
+```{r, RT Assumptions of ANOVA test}
 ## RT
 # normality test
 shapiro.test(means_BSPv2$mRT)
