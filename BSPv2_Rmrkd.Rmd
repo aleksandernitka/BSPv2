@@ -19,6 +19,9 @@ library(car)
 library(ggpubr)
 
 options(scipen = 999) # say no to sci-notation!
+
+
+# TODO
 ```
 
 ## List matlab files in directory
@@ -51,11 +54,11 @@ for (i in 1:length(files.mat)) {
     # probe - logical if trial was a probe or not
     # SearchRespCode - 38 is UpArrow and 40 is DownArrow
     
-    # TODO
-    # How do I know if response to rotation was correct?
+
     
     tmp = as.data.frame(cbind(t(dat$searchRT), 
                               t(dat$searchRespCode),
+                              t(dat$searchacc),
                               t(dat$targletters),
                               t(dat$distletters),
                               dat$probe, 
@@ -64,7 +67,7 @@ for (i in 1:length(files.mat)) {
                               exp, ss, block, cond
                               ))
     
-    names(tmp) = c('RT', 'SearchRespCode', 'TargLetters', 'DistLetters', 'ProbeTrial', 'FA', 
+    names(tmp) = c('RT', 'SearchRespCode', 'SearchAccuracy', 'TargLetters', 'DistLetters', 'ProbeTrial', 'FA', 
                    'ColorCue', 'Exp', 'SS', 'Block', 'Cond')
     
     # Extract orientation codes
@@ -100,6 +103,8 @@ for (i in 1:length(files.mat)) {
 BSPv2$RT = as.numeric(as.character(BSPv2$RT))
 BSPv2$TargLetters = as.numeric(BSPv2$TargLetters)
 BSPv2$DistLetters = as.numeric(BSPv2$DistLetters)
+BSPv2$TrialType = 'RT'
+BSPv2$TrialType[BSPv2$ProbeTrial == 1] = 'PR'
 
 # If RT = 0 and trial != Probe then it was a timeOut
 # need to mark those as otherwise 0 will be counted towards the mean
@@ -114,6 +119,7 @@ means_BSPv2 = data.frame(matrix(nrow = length(SSid)*3, ncol = 5))
 names(means_BSPv2) = c('SS', 'Cond', 'mRT', 'LettersTarget', 'LettersDistractor')
 means_BSPv2$SS = SSid
 means_BSPv2$Cond = c(rep('cond0',length(SSid)), rep('cond1',length(SSid)), rep('cond2',length(SSid)))
+means_BSPv2$Accuracy = NA # 1 means correct. 0 mean incorrect and 2 means no response or participant has a probe trial
 ```
 
 
@@ -121,21 +127,26 @@ means_BSPv2$Cond = c(rep('cond0',length(SSid)), rep('cond1',length(SSid)), rep('
 ```{r, extract means}
 for (i in 1:nrow(means_BSPv2)){
     
-    means_BSPv2$mRT[i] = mean(subset(BSPv2$RT, 
-                                     BSPv2$SS == means_BSPv2$SS[i] & 
-                                         BSPv2$Cond == means_BSPv2$Cond[i] & 
-                                         BSPv2$ProbeTrial == 0 &
-                                         BSPv2$timeOut == 0))
+    # isolate 1 ss data
+    d = subset(BSPv2, BSPv2$SS == means_BSPv2$SS[i])
+    # isolate rt trials
+    r = subset(d, d$TrialType == 'RT')
+    # isolate probe trials
+    p = subset(d, d$TrialType == 'PR')
     
-    means_BSPv2$LettersTarget[i] = mean(subset(BSPv2$TargLetters, 
-                                     BSPv2$SS == means_BSPv2$SS[i] & 
-                                         BSPv2$Cond == means_BSPv2$Cond[i] & 
-                                         BSPv2$ProbeTrial == 1))
+    # calculate mean RT form a subset of condition, exclude Timed out trials and Incorrect responses
+    means_BSPv2$mRT[i] = mean( subset( r$RT, r$Cond == means_BSPv2$Cond[i] & r$timeOut == 0 & r$SearchAccuracy == 1 ))
     
-    means_BSPv2$LettersDistractor[i] = mean(subset(BSPv2$DistLetters, 
-                                               BSPv2$SS == means_BSPv2$SS[i] & 
-                                                   BSPv2$Cond == means_BSPv2$Cond[i] & 
-                                                   BSPv2$ProbeTrial == 1))
+    # calculate mean Accuracy for condition, form: (timeout + inaccurate) / all trials
+    means_BSPv2$Accuracy[i] = 1 - (nrow(subset(r, r$SearchAccuracy != 1 & r$Cond == means_BSPv2$Cond[i]))/nrow(subset(r, r$Cond == means_BSPv2$Cond[i])))
+    
+    # calcualte the mean number of letters reported on Target side in each probe trial
+    means_BSPv2$LettersTarget[i] = mean(subset( p$TargLetters, p$Cond == means_BSPv2$Cond[i] ))
+    
+    # do the same for distracotr letters
+    means_BSPv2$LettersDistractor[i] = mean(subset( p$DistLetters, p$Cond == means_BSPv2$Cond[i] ))  
+    
+
     
 }
 
@@ -161,6 +172,8 @@ kable(means_BSPv2) # nice looking table in html
 
 ###RT analysis 
 Performed for N = `r length(SSid)`. Mean RT for **'cond0'** was `r mean(subset(means_BSPv2$mRT, means_BSPv2$Cond == 'cond0'))` (SD = `r sd(subset(means_BSPv2$mRT, means_BSPv2$Cond == 'cond0'))`), for **'cond1'** it was `r mean(subset(means_BSPv2$mRT, means_BSPv2$Cond == 'cond1'))` (SD = `r sd(subset(means_BSPv2$mRT, means_BSPv2$Cond == 'cond1'))`) and for **'cond2'** it was `r mean(subset(means_BSPv2$mRT, means_BSPv2$Cond == 'cond2'))` (SD = `r sd(subset(means_BSPv2$mRT, means_BSPv2$Cond == 'cond2'))`).
+
+Accuracy, the mean accuracy for **'cond0'** was M = `r mean(means_BSPv2$Accuracy[means_BSPv2$Cond == 'cond0'])` (SD = `r sd(means_BSPv2$Accuracy[means_BSPv2$Cond == 'cond0'])`) and for the **'cond1'** condition M = `r mean(means_BSPv2$Accuracy[means_BSPv2$Cond == 'cond1'])`, SD = (`r sd(means_BSPv2$Accuracy[means_BSPv2$Cond == 'cond1'])`) and M = M = `r mean(means_BSPv2$Accuracy[means_BSPv2$Cond == 'cond2'])`, SD = (`r sd(means_BSPv2$Accuracy[means_BSPv2$Cond == 'cond2'])`) for **'cond2'**.
 
 ###Probe analysis. 
 On **'cond0'** trials participants reported M = `r mean(means_BSPv2$LettersTarget[means_BSPv2$Cond == 'cond0'])` (SD = `r sd(means_BSPv2$LettersTarget[means_BSPv2$Cond == 'cond0'])`) letters on the Target Side and M = `r mean(means_BSPv2$LettersDistractor[means_BSPv2$Cond == 'cond0'])` (SD = `r sd(means_BSPv2$LettersDistractor[means_BSPv2$Cond == 'cond0'])`) on Distractor Side. During the **'cond1'** trials participants reported M = `r mean(means_BSPv2$LettersTarget[means_BSPv2$Cond == 'cond1'])` (SD = `r sd(means_BSPv2$LettersTarget[means_BSPv2$Cond == 'cond1'])`) letters on the Target Side and M = `r mean(means_BSPv2$LettersDistractor[means_BSPv2$Cond == 'cond1'])` (SD = `r sd(means_BSPv2$LettersDistractor[means_BSPv2$Cond == 'cond1'])`) on Distractor Side. Finally, for the **'cond2'** trials participants reported M = `r mean(means_BSPv2$LettersTarget[means_BSPv2$Cond == 'cond2'])` (SD = `r sd(means_BSPv2$LettersTarget[means_BSPv2$Cond == 'cond2'])`) letters on the Target Side and M = `r mean(means_BSPv2$LettersDistractor[means_BSPv2$Cond == 'cond2'])` (SD = `r sd(means_BSPv2$LettersDistractor[means_BSPv2$Cond == 'cond2'])`) on Distractor Side.
@@ -229,6 +242,17 @@ rt_violin = ggviolin(means_BSPv2, x = "Cond", y = "mRT", fill = "Cond",
          add = "boxplot", add.params = list(fill = "white"))+ stat_compare_means(comparisons = my_test, method = 't.test')  
 
 rt_violin
+
+```
+
+```{r, accuracy}
+
+my_test = list( c("cond0", "cond1"), c("cond1", "cond2"), c("cond0", "cond2") )
+
+acc_plg = ggboxplot(means_BSPv2, x = "Cond", y = "Accuracy",
+                color = "Cond", palette =c("dark red", "dark green", "dark blue"),
+                add = "jitter", shape = "Cond") + stat_compare_means(comparisons = my_test, method = "t.test") + ggtitle("Accuracy + t.test")
+acc_plg
 
 ```
 
