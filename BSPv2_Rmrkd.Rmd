@@ -22,6 +22,9 @@ options(scipen = 999) # say no to sci-notation!
 
 
 # TODO
+# ss21 had only 2 conditions
+# ss ids are not consecutive
+
 ```
 
 ## List matlab files in directory
@@ -76,7 +79,7 @@ for (i in 1:length(files.mat)) {
                       'orient05', 'orient06', 'orient07', 'orient08',
                       'orient09', 'orient10', 'orient11', 'orient12')
     
-    tmp = cbind(tmp, orient)
+    #tmp = cbind(tmp, orient)
     
     if (i == 1){
         # Create main data frame by copying the tmp
@@ -105,6 +108,7 @@ BSPv2$TargLetters = as.numeric(BSPv2$TargLetters)
 BSPv2$DistLetters = as.numeric(BSPv2$DistLetters)
 BSPv2$TrialType = 'RT'
 BSPv2$TrialType[BSPv2$ProbeTrial == 1] = 'PR'
+BSPv2$SS = as.numeric(as.character(unique(BSPv2$SS)))
 
 # If RT = 0 and trial != Probe then it was a timeOut
 # need to mark those as otherwise 0 will be counted towards the mean
@@ -112,7 +116,7 @@ BSPv2$timeOut = 0
 BSPv2$timeOut[BSPv2$RT == 0 & BSPv2$ProbeTrial == 0] = 1
 
 # Get subject IDs
-SSid = as.numeric(unique(BSPv2$SS))
+SSid = unique(BSPv2$SS)
 
 # Create a DF for means
 means_BSPv2 = data.frame(matrix(nrow = length(SSid)*3, ncol = 5))
