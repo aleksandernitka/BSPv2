@@ -2,7 +2,9 @@
 title: "BSPv2"
 author: "Aleksander Nitka"
 date: "25/09/2018"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -46,6 +48,10 @@ for (i in 1:length(files.mat)) {
     ss = strsplit(files.mat[i], "_")[[1]][2]
     block = strsplit(files.mat[i], "_")[[1]][3]
     cond = strsplit(strsplit(files.mat[i], "_")[[1]][4], '[.]')[[1]][1]
+    
+    if (nchar(ss) == 1){
+        ss = paste("0", ss, sep = '')
+    }
 
     # Read mat file
     dat = readMat( paste(matdir, files.mat[i], sep = "/"))
@@ -67,11 +73,11 @@ for (i in 1:length(files.mat)) {
                               dat$probe, 
                               t(dat$FA), 
                               t(dat$colorcue),
-                              exp, ss, block, cond
+                              exp, ss, block, cond, c(1:nrow(t(dat$colorcue)))
                               ))
     
     names(tmp) = c('RT', 'SearchRespCode', 'SearchAccuracy', 'TargLetters', 'DistLetters', 'ProbeTrial', 'FA', 
-                   'ColorCue', 'Exp', 'SS', 'Block', 'Cond')
+                   'ColorCue', 'Exp', 'SS', 'Block', 'Cond', 'Order')
     
     # Extract orientation codes
     orient = as.data.frame(dat$Orient)
@@ -114,6 +120,7 @@ BSPv2$SS = as.numeric(as.character(unique(BSPv2$SS)))
 # need to mark those as otherwise 0 will be counted towards the mean
 BSPv2$timeOut = 0
 BSPv2$timeOut[BSPv2$RT == 0 & BSPv2$ProbeTrial == 0] = 1
+BSPv2$RT[BSPv2$SearchAccuracy != 1] = NA
 
 # Get subject IDs
 SSid = unique(BSPv2$SS)
@@ -314,4 +321,33 @@ summary(rt_aov)
 
 # Run this for variances not equal:
 #rt_aov_ow = oneway.test(data = means_BSPv2, mRT ~ Cond)
+```
+
+
+```{r, RT as a function of trial number}
+trials = data.frame(matrix(nrow = 96, ncol = 7))
+names(trials) = c('Order', 'c0RT', 'c0SD', 'c1RT', 'c1SD', 'c2RT', 'c2SD')
+
+trials$Order = c(1:96)
+
+for (t in 1:96){
+    
+    trials$c0RT[t] = mean( BSPv2$RT[BSPv2$Cond == 'cond0' & BSPv2$Order == trials$Order[t]], na.rm = TRUE )
+    trials$c1RT[t] = mean( BSPv2$RT[BSPv2$Cond == 'cond1' & BSPv2$Order == trials$Order[t]], na.rm = TRUE )
+    trials$c2RT[t] = mean( BSPv2$RT[BSPv2$Cond == 'cond2' & BSPv2$Order == trials$Order[t]], na.rm = TRUE )
+    
+    trials$c0SD[t] = sd( BSPv2$RT[BSPv2$Cond == 'cond0' & BSPv2$Order == trials$Order[t]], na.rm = TRUE )
+    trials$c1SD[t] = sd( BSPv2$RT[BSPv2$Cond == 'cond1' & BSPv2$Order == trials$Order[t]], na.rm = TRUE )
+    trials$c2SD[t] = sd( BSPv2$RT[BSPv2$Cond == 'cond2' & BSPv2$Order == trials$Order[t]], na.rm = TRUE )
+    
+}
+
+plot(trials$c0RT, type = 'l', col = 'red', ylim = c(0.5,2.5))
+lines(trials$c1RT, type = 'l', col = 'blue')
+lines(trials$c2RT, type = 'l', col = 'green')
+
+plot(trials$c0SD, type = 'l', col = 'red', ylim = c(0,1.5))
+lines(trials$c1SD, type = 'l', col = 'blue')
+lines(trials$c2SD, type = 'l', col = 'green')
+
 ```
