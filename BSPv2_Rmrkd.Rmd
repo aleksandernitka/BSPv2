@@ -2,17 +2,21 @@
 title: "BSPv2"
 author: "Aleksander Nitka"
 date: "25/09/2018"
-output:
-  pdf_document: default
-  html_document: default
+output: pdf_document
+classoption: landscape
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
-list.of.packages <- c("ggplot2", "R.matlab", "ggpubr", "knitr", "car")
-new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-if(length(new.packages)>0) {install.packages(new.packages)}
+
+list.of.packages <-
+c("ggplot2", "R.matlab", "ggpubr", "knitr", "car")
+new.packages <-
+list.of.packages[!(list.of.packages %in% installed.packages()[, "Package"])]
+if (length(new.packages) > 0) {
+install.packages(new.packages)
+}
 
 library(R.matlab)
 library(ggplot2)
@@ -30,7 +34,7 @@ options(scipen = 999) # say no to sci-notation!
 ```
 
 ## List matlab files in directory
-```{r, list matlab files in directory}
+```{r, list matlab files in directory,  results="hide"}
 
 # Change that to wherever your data is
 matdir = "/Users/aleksandernitka/OneDrive\ -\ The\ University\ of\ Nottingham/Lehigh_2018/Data/matlab_data"
@@ -40,21 +44,21 @@ print(files.mat)
 ```
 
 ## Load files into a one data frame
-```{r, load files}
+```{r, load files,  results="hide"}
 for (i in 1:length(files.mat)) {
-    
     # Extract details from file name
     exp = strsplit(files.mat[i], "_")[[1]][1]
     ss = strsplit(files.mat[i], "_")[[1]][2]
     block = strsplit(files.mat[i], "_")[[1]][3]
+    
     cond = strsplit(strsplit(files.mat[i], "_")[[1]][4], '[.]')[[1]][1]
     
-    if (nchar(ss) == 1){
-        ss = paste("0", ss, sep = '')
+    if (nchar(ss) == 1) {
+    ss = paste("0", ss, sep = '')
     }
-
+    
     # Read mat file
-    dat = readMat( paste(matdir, files.mat[i], sep = "/"))
+    dat = readMat(paste(matdir, files.mat[i], sep = "/"))
     
     # Extract data from mat to R
     # searchRT - rection time to non-porbe trials, 0 if probe trial but 0 also if no response
@@ -63,46 +67,75 @@ for (i in 1:length(files.mat)) {
     # probe - logical if trial was a probe or not
     # SearchRespCode - 38 is UpArrow and 40 is DownArrow
     
-
     
-    tmp = as.data.frame(cbind(t(dat$searchRT), 
-                              t(dat$searchRespCode),
-                              t(dat$searchacc),
-                              t(dat$targletters),
-                              t(dat$distletters),
-                              dat$probe, 
-                              t(dat$FA), 
-                              t(dat$colorcue),
-                              exp, ss, block, cond, c(1:nrow(t(dat$colorcue)))
-                              ))
     
-    names(tmp) = c('RT', 'SearchRespCode', 'SearchAccuracy', 'TargLetters', 'DistLetters', 'ProbeTrial', 'FA', 
-                   'ColorCue', 'Exp', 'SS', 'Block', 'Cond', 'Order')
+    tmp = as.data.frame(cbind(
+    t(dat$searchRT),
+    t(dat$searchRespCode),
+    t(dat$searchacc),
+    t(dat$targletters),
+    t(dat$distletters),
+    dat$probe,
+    t(dat$FA),
+    t(dat$colorcue),
+    exp,
+    ss,
+    block,
+    cond,
+    c(1:nrow(t(dat$colorcue)))
+    ))
+    
+    names(tmp) = c(
+    'RT',
+    'SearchRespCode',
+    'SearchAccuracy',
+    'TargLetters',
+    'DistLetters',
+    'ProbeTrial',
+    'FA',
+    'ColorCue',
+    'Exp',
+    'SS',
+    'Block',
+    'Cond',
+    'Order'
+    )
     
     # Extract orientation codes
     orient = as.data.frame(dat$Orient)
-    names(orient) = c('orient01', 'orient02', 'orient03', 'orient04',
-                      'orient05', 'orient06', 'orient07', 'orient08',
-                      'orient09', 'orient10', 'orient11', 'orient12')
+    names(orient) = c(
+    'orient01',
+    'orient02',
+    'orient03',
+    'orient04',
+    'orient05',
+    'orient06',
+    'orient07',
+    'orient08',
+    'orient09',
+    'orient10',
+    'orient11',
+    'orient12'
+    )
     
     #tmp = cbind(tmp, orient)
     
-    if (i == 1){
-        # Create main data frame by copying the tmp
-        BSPv2 = tmp
-        print('BSPv2 data frame created')
-        print(sprintf('Added ss %s, %s, %s to BSPv2', ss, block, cond))
-        remove(tmp, block, cond, exp, ss, orient, dat)
+    if (i == 1) {
+    # Create main data frame by copying the tmp
+    BSPv2 = tmp
+    print('BSPv2 data frame created')
+    print(sprintf('Added ss %s, %s, %s to BSPv2', ss, block, cond))
+    remove(tmp, block, cond, exp, ss, orient, dat)
     }
     else {
-        # bind main data frame and tmp 
-        BSPv2 = rbind(BSPv2, tmp)
-        print(sprintf('Added ss %s, %s, %s to BSPv2', ss, block, cond))
-        remove(tmp, block, cond, exp, ss, orient, dat)
-        
+    # bind main data frame and tmp
+    BSPv2 = rbind(BSPv2, tmp)
+    print(sprintf('Added ss %s, %s, %s to BSPv2', ss, block, cond))
+    remove(tmp, block, cond, exp, ss, orient, dat)
+    
     }
     
-}
+    }
 ```
 
 ## Do some data manipulations, prep for mean analysis
@@ -123,13 +156,15 @@ BSPv2$timeOut[BSPv2$RT == 0 & BSPv2$ProbeTrial == 0] = 1
 BSPv2$RT[BSPv2$SearchAccuracy != 1] = NA
 
 # Get subject IDs
-SSid = unique(BSPv2$SS)
+SSid = sort(unique(BSPv2$SS))
 
 # Create a DF for means
-means_BSPv2 = data.frame(matrix(nrow = length(SSid)*3, ncol = 5))
+means_BSPv2 = data.frame(matrix(nrow = length(SSid) * 3, ncol = 5))
 names(means_BSPv2) = c('SS', 'Cond', 'mRT', 'LettersTarget', 'LettersDistractor')
 means_BSPv2$SS = SSid
-means_BSPv2$Cond = c(rep('cond0',length(SSid)), rep('cond1',length(SSid)), rep('cond2',length(SSid)))
+means_BSPv2$Cond = c(rep('cond0', length(SSid)),
+rep('cond1', length(SSid)),
+rep('cond2', length(SSid)))
 means_BSPv2$Accuracy = NA # 1 means correct. 0 mean incorrect and 2 means no response or participant has a probe trial
 ```
 
@@ -149,7 +184,8 @@ for (i in 1:nrow(means_BSPv2)){
     means_BSPv2$mRT[i] = mean( subset( r$RT, r$Cond == means_BSPv2$Cond[i] & r$timeOut == 0 & r$SearchAccuracy == 1 ))
     
     # calculate mean Accuracy for condition, form: (timeout + inaccurate) / all trials
-    means_BSPv2$Accuracy[i] = 1 - (nrow(subset(r, r$SearchAccuracy != 1 & r$Cond == means_BSPv2$Cond[i]))/nrow(subset(r, r$Cond == means_BSPv2$Cond[i])))
+    means_BSPv2$Accuracy[i] = 1 - (nrow(subset(r, r$SearchAccuracy != 1 & r$Cond == 
+                                                   means_BSPv2$Cond[i]))/nrow(subset(r, r$Cond == means_BSPv2$Cond[i])))
     
     # calcualte the mean number of letters reported on Target side in each probe trial
     means_BSPv2$LettersTarget[i] = mean(subset( p$TargLetters, p$Cond == means_BSPv2$Cond[i] ))
@@ -198,37 +234,11 @@ redt = rgb(red = 1, green = 0, blue = 0, alpha = transparency)
 greent = rgb(red = 0, green = 1, blue = 0, alpha = transparency)
 bluet = rgb(red =0 , green = 0, blue = 1, alpha = transparency)
 
-for (i in 1:length(SSid)){
-    
-    if (i == 1){
-        plot(density(BSPv2$RT[BSPv2$SS == SSid[i] & BSPv2$Cond == 'cond0' & BSPv2$ProbeTrial == 0 & BSPv2$timeOut == 0]), ylim = c(0,1), col = 'red', main = 'RT distribution, subject/condition')
-        lines(density(BSPv2$RT[BSPv2$SS == SSid[i] & BSPv2$Cond == 'cond1' & BSPv2$ProbeTrial == 0 & BSPv2$timeOut == 0]), ylim = c(0,1), col = 'blue')
-        lines(density(BSPv2$RT[BSPv2$SS == SSid[i] & BSPv2$Cond == 'cond2' & BSPv2$ProbeTrial == 0 & BSPv2$timeOut == 0]), ylim = c(0,1), col = 'green')
-        
-        # map individual trials on the rug - red, green, blue
-        rug(BSPv2$RT[BSPv2$SS == SSid[i] & BSPv2$Cond == 'cond0' & BSPv2$ProbeTrial == 0 & BSPv2$timeOut == 0], col = redt)
-        rug(BSPv2$RT[BSPv2$SS == SSid[i] & BSPv2$Cond == 'cond1' & BSPv2$ProbeTrial == 0 & BSPv2$timeOut == 0], col = bluet)
-        rug(BSPv2$RT[BSPv2$SS == SSid[i] & BSPv2$Cond == 'cond2' & BSPv2$ProbeTrial == 0 & BSPv2$timeOut == 0], col = greent)
-        
-        legend(3.5,1, c('cond0','cond1', 'cond2'), lty=c(1,1), lwd=c(2.5,2.5), col=c('red','blue','green'))
-    }
-    
-    else {
-        lines(density(BSPv2$RT[BSPv2$SS == SSid[i] & BSPv2$Cond == 'cond0'  & BSPv2$ProbeTrial == 0 & BSPv2$timeOut == 0 ]), col = 'red')
-        lines(density(BSPv2$RT[BSPv2$SS == SSid[i] & BSPv2$Cond == 'cond1' & BSPv2$ProbeTrial == 0 & BSPv2$timeOut == 0]), ylim = c(0,1), col = 'blue')
-        lines(density(BSPv2$RT[BSPv2$SS == SSid[i] & BSPv2$Cond == 'cond2' & BSPv2$ProbeTrial == 0 & BSPv2$timeOut == 0]), ylim = c(0,1), col = 'green')
-        
-        # map individual trials on the rug - red, green, blue
-        rug(BSPv2$RT[BSPv2$SS == SSid[i] & BSPv2$Cond == 'cond0' & BSPv2$ProbeTrial == 0 & BSPv2$timeOut == 0], col = redt)
-        rug(BSPv2$RT[BSPv2$SS == SSid[i] & BSPv2$Cond == 'cond1' & BSPv2$ProbeTrial == 0 & BSPv2$timeOut == 0], col = bluet)
-        rug(BSPv2$RT[BSPv2$SS == SSid[i] & BSPv2$Cond == 'cond2' & BSPv2$ProbeTrial == 0 & BSPv2$timeOut == 0], col = greent)
-    }
-    
-}
 
 # Plot mean distributions
 
-plot(density(means_BSPv2$mRT[means_BSPv2$Cond == 'cond0']), col = 'red', xlim = c(0.5,2.3), main = 'RT distribution plots', lwd = 2)
+plot(density(means_BSPv2$mRT[means_BSPv2$Cond == 'cond0']), col = 'red', xlim = c(0.5,3), 
+     ylim = c(0,6.5), main = 'RT distribution plots', lwd = 2)
 lines(density(means_BSPv2$mRT[means_BSPv2$Cond == 'cond1']), col = 'blue', lwd = 2)
 lines(density(means_BSPv2$mRT[means_BSPv2$Cond == 'cond2']), col = 'green', lwd = 2)
 legend(.5,2.5, c('cond0','cond1', 'cond2'), lty=c(1,1), lwd=c(2.5,2.5), col=c('red','blue','green'))
@@ -238,19 +248,21 @@ rug(means_BSPv2$mRT[means_BSPv2$Cond == 'cond2'], col = greent, lwd = 2)
 ```
 
 ```{r, ggplot - means}
-#ggplot(data = means_BSPv2, aes(Cond, mRT)) + geom_point(color="skyblue") + stat_summary(fun.y=mean,geom="line",lwd=1,aes(group=1))
 
 my_test = list( c("cond0", "cond1"), c("cond1", "cond2"), c("cond0", "cond2") )
 
 rt_plg = ggboxplot(means_BSPv2, x = "Cond", y = "mRT",
                 color = "Cond", palette =c("dark red", "dark green", "dark blue"),
-                add = "jitter", shape = "Cond") + stat_compare_means(comparisons = my_test, method = "t.test") + ggtitle("RT + t.test")
+                add = "jitter", shape = "Cond") + 
+                stat_compare_means(comparisons = my_test, method = "t.test") + 
+                ggtitle("RT + t.test")
 
 rt_plg
 
 rt_violin = ggviolin(means_BSPv2, x = "Cond", y = "mRT", fill = "Cond",
          palette = c("#00AFBB", "#E7B800", "#FC4E07"),
-         add = "boxplot", add.params = list(fill = "white"))+ stat_compare_means(comparisons = my_test, method = 't.test')  
+         add = "boxplot", add.params = list(fill = "white")) + 
+         stat_compare_means(comparisons = my_test, method = 't.test')  
 
 rt_violin
 
@@ -262,7 +274,8 @@ my_test = list( c("cond0", "cond1"), c("cond1", "cond2"), c("cond0", "cond2") )
 
 acc_plg = ggboxplot(means_BSPv2, x = "Cond", y = "Accuracy",
                 color = "Cond", palette =c("dark red", "dark green", "dark blue"),
-                add = "jitter", shape = "Cond") + stat_compare_means(comparisons = my_test, method = "t.test") + ggtitle("Accuracy + t.test")
+                add = "jitter", shape = "Cond") + 
+                stat_compare_means(comparisons = my_test, method = "t.test") + ggtitle("Accuracy + t.test")
 acc_plg
 
 ```
@@ -273,12 +286,14 @@ my_test = list( c("cond0", "cond1"), c("cond1", "cond2"), c("cond0", "cond2") )
 
 lettDiff_plg = ggboxplot(means_BSPv2, x = "Cond", y = "LettersDiff",
                 color = "Cond", palette =c("dark red", "dark green", "dark blue"),
-                add = "jitter", shape = "Cond") + stat_compare_means(comparisons = my_test, method = "t.test") + ggtitle("LettersDiff + t.test")
+                add = "jitter", shape = "Cond") + stat_compare_means(comparisons = my_test, method = "t.test") + 
+                ggtitle("LettersDiff + t.test")
 lettDiff_plg
 
 lettTar_plg = ggboxplot(means_BSPv2, x = "Cond", y = "LettersTarget",
                 color = "Cond", palette =c("dark red", "dark green", "dark blue"),
-                add = "jitter", shape = "Cond") + stat_compare_means(comparisons = my_test, method = "t.test") + ggtitle("LettersTarget + t.test")
+                add = "jitter", shape = "Cond") + stat_compare_means(comparisons = my_test, method = "t.test") + 
+                ggtitle("LettersTarget + t.test")
 lettTar_plg
 
 lettDist_plg = ggboxplot(means_BSPv2, x = "Cond", y = "LettersDistractor",
@@ -342,12 +357,9 @@ for (t in 1:96){
     
 }
 
-plot(trials$c0RT, type = 'l', col = 'red', ylim = c(0.5,2.5))
-lines(trials$c1RT, type = 'l', col = 'blue')
-lines(trials$c2RT, type = 'l', col = 'green')
-
-plot(trials$c0SD, type = 'l', col = 'red', ylim = c(0,1.5))
-lines(trials$c1SD, type = 'l', col = 'blue')
-lines(trials$c2SD, type = 'l', col = 'green')
+plot(smooth(trials$c0RT), type = 'l', col = 'red', ylim = c(0.5,2.5), main = 'RT as a function of trial number')
+lines(smooth(trials$c1RT), type = 'l', col = 'blue')
+lines(smooth(trials$c2RT), type = 'l', col = 'green')
+legend(70,1.0, c('cond0','cond1', 'cond2'), lty=c(1,1), lwd=c(2.5,2.5), col=c('red','blue','green'))
 
 ```
