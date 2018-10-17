@@ -313,7 +313,10 @@ rt_sw_c2 = shapiro.test(means_BSPv2$mRT[means_BSPv2$Cond == 'cond2'])
 
 # Bartlett Test of Homogeneity of Variances PARAMETIC
 # From: http://www.instantr.com/2012/12/12/performing-bartletts-test-in-r/
-# Bartlett’s test allows you to compare the variance of two or more samples to determine whether they are drawn from populations with equal variance. It is suitable for normally distributed data. The test has the null hypothesis that the variances are equal and the alterntive hypothesis that they are not equal.
+# Bartlett’s test allows you to compare the variance of two or more samples to 
+# determine whether they are drawn from populations with equal variance. It is suitable for 
+# normally distributed data. The test has the null hypothesis that the variances are equal and 
+# the alterntive hypothesis that they are not equal.
 # NS means we cannot reject the null hypothesis that the variance is the same for all treatment groups. 
 rt_bt = bartlett.test(mRT~Cond, data=means_BSPv2)
 
